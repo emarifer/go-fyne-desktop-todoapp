@@ -1,0 +1,10 @@
+[Details]
+Icon = "assets/logo.png"
+Name = "fToDo"
+ID = "com.emarifer.app"
+Version = "0.0.1"
+Build = 1
+
+[LinuxAndBSD]
+Categories = ["Development"]
+Comment = "Golang desktop todo app using Fyne UI framework."
