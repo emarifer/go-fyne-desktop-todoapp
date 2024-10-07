@@ -12,6 +12,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/data/binding"
+	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -42,7 +43,7 @@ func renderListItem() fyne.CanvasObject {
 }
 
 func bindDataToList(
-	displayText *widget.Label, todos *services.Todos,
+	displayText *widget.Label, todos *services.Todos, w fyne.Window,
 ) func(di binding.DataItem, co fyne.CanvasObject) {
 	return func(di binding.DataItem, co fyne.CanvasObject) {
 		t := models.NewTodoFromDataItem(di)
@@ -51,11 +52,17 @@ func bindDataToList(
 		l := ctr.Objects[0].(*widget.Label)
 		c := ctr.Objects[1].(*widget.Check)
 		ctr.Objects[2].(*widget.Button).OnTapped = func() {
-			todos.Remove(t)
-			todos.Dbase.DeleteTodo(t)
+			msg := fmt.Sprintf("Are you sure you want to delete the task with Description %q?", t.Description)
+			dialog.ShowConfirm("Confirmation", msg, func(b bool) {
+				if !b {
+					return
+				}
+				todos.Remove(t)
+				todos.Dbase.DeleteTodo(t)
 
-			fmt.Printf("The ToDo with description %q has been successfully removed!\n", t.Description)
-			displayText.SetText(fmt.Sprintf("%q has been successfully removed!", t.Description))
+				fmt.Printf("The ToDo with description %q has been successfully removed!\n", t.Description)
+				displayText.SetText(fmt.Sprintf("%q has been successfully removed!", t.Description))
+			}, w)
 		}
 
 		l.Bind(binding.BindString(&t.Description))
@@ -121,10 +128,20 @@ func main() {
 	}
 
 	deleteBtn := widget.NewButtonWithIcon(
-		"Reset", theme.CancelIcon(), func() {
-			todos.Drop()
+		"Reset", theme.ViewRefreshIcon(), func() {
+			dialog.ShowConfirm(
+				"Confirmation",
+				"Are you sure you want to delete all the data you have saved? This action is irreversible!!",
+				func(b bool) {
+					if !b {
+						return
+					}
 
-			displayText.SetText("Display")
+					todos.Drop()
+
+					displayText.SetText("Display")
+				}, w,
+			)
 		},
 	)
 
@@ -136,7 +153,7 @@ func main() {
 		renderListItem,
 		// func that is called for each item in the list and allows
 		// but this time we get the actual DataItem we need to cast
-		bindDataToList(displayText, &todos),
+		bindDataToList(displayText, &todos, w),
 	)
 	list.OnSelected = func(id widget.ListItemID) {
 		t := todos.All()
