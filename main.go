@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"image/color"
 
+	"github.com/emarifer/go-fyne-desktop-todoapp/internal/db"
+	"github.com/emarifer/go-fyne-desktop-todoapp/internal/models"
+	"github.com/emarifer/go-fyne-desktop-todoapp/internal/services"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/container"
@@ -11,8 +15,6 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"github.com/emarifer/go-fyne-desktop-todoapp/internal/models"
 )
 
 type forcedVariant struct {
@@ -27,42 +29,65 @@ func (f *forcedVariant) Color(
 	return f.Theme.Color(name, f.variant)
 }
 
-/* type tappableLabel struct {
-	widget.Label
-	extraData interface{}
+func renderListItem() fyne.CanvasObject {
+	return container.NewBorder(
+		nil, nil, // Top & bottom
+		// ↓ left of the border ↓
+		widget.NewCheck("", nil), // func(b bool) {}
+		// ↓ right of the border ↓
+		widget.NewButtonWithIcon("", theme.DeleteIcon(), nil),
+		// take the rest of the space ↓
+		widget.NewLabel(""),
+	)
 }
 
-func newTappableLabel() *tappableLabel {
-	l := &tappableLabel{}
-	l.ExtendBaseWidget(l)
+func bindDataToList(
+	displayText *widget.Label, todos *services.Todos,
+) func(di binding.DataItem, co fyne.CanvasObject) {
+	return func(di binding.DataItem, co fyne.CanvasObject) {
+		t := models.NewTodoFromDataItem(di)
+		ctr, _ := co.(*fyne.Container)
 
-	return l
-}
+		l := ctr.Objects[0].(*widget.Label)
+		c := ctr.Objects[1].(*widget.Check)
+		ctr.Objects[2].(*widget.Button).OnTapped = func() {
+			todos.Remove(t)
+			todos.Dbase.DeleteTodo(t)
 
-func (t *tappableLabel) Tapped(_ *fyne.PointEvent) {
-	// display = fmt.Sprintf("Description: %q • Completed: %t\n", t.Text, t.extraData)
-}
+			fmt.Printf("The ToDo with description %q has been successfully removed!\n", t.Description)
+			displayText.SetText(fmt.Sprintf("%q has been successfully removed!", t.Description))
+		}
 
-func (t *tappableLabel) TappedSecondary(_ *fyne.PointEvent) {}
+		l.Bind(binding.BindString(&t.Description))
+		c.Bind(binding.BindBool(&t.Done))
 
-func (t *tappableLabel) SetExtraData(data any) {
-	t.extraData = data
-} */
-
-var data = []models.Todo{
-	models.NewTodo(0, "Some stuff"),
-	models.NewTodo(1, "Some more stuff"),
-	models.NewTodo(2, "Some other things"),
+		l.Truncation = fyne.TextTruncateEllipsis
+		c.OnChanged = func(b bool) {
+			t.Done = b
+			todos.Dbase.UpdateTodo(t)
+		}
+	}
 }
 
 func main() {
-	a := app.New()
+	// Create and connect to the DB
+	db := db.MakeDb()
+	defer db.Close()
+
+	// Get data from the DB and bind it to an UntypedList
+	todos := services.NewTodosFromDb(&db)
+	// defer todos.Persist()
+
+	// Setup App
+	a := app.NewWithID("ftodo")
 	a.Settings().SetTheme(&forcedVariant{
 		Theme:   theme.DefaultTheme(),
 		variant: theme.VariantDark,
 	})
 	w := a.NewWindow("fToDo App")
+	w.Resize(fyne.NewSize(480, 600))
 
+	// Keyboard shortcut for closing the application
 	ctrlQ := &desktop.CustomShortcut{
 		KeyName:  fyne.KeyQ,
 		Modifier: fyne.KeyModifierControl,
@@ -71,28 +96,21 @@ func main() {
 		a.Quit()
 	})
 
-	// t := models.NewTodo("Show this on the window")
-	todos := binding.NewUntypedList()
-	for _, t := range data {
-		todos.Append(t)
-	}
-	count := 2
-
-	newTodoEntry := widget.NewEntry()
-	newTodoEntry.PlaceHolder = "New TODO description…"
+	// Setup Widgets
+	input := widget.NewEntry()
+	input.PlaceHolder = "New TODO description…"
 	addBtn := widget.NewButtonWithIcon(
 		"Add", theme.DocumentCreateIcon(), func() {
-			// fmt.Printf("You have typed %q!\n", newTodoEntry.Text)
-			count++
-			t := models.NewTodo(count, newTodoEntry.Text)
-			todos.Append(t)
-			data = append(data, t)
-			newTodoEntry.SetText("")
-		})
+			t := models.NewTodo(input.Text)
+			todos.Add(&t)
+			input.SetText("")
+		},
+	)
 	addBtn.Disable()
-	newTodoEntry.OnChanged = func(s string) {
+	input.OnChanged = func(s string) {
+		// ↓ so that if we delete characters it will be disabled again ↓
 		addBtn.Disable()
-		if len(s) >= 3 {
+		if len(s) > 2 {
 			addBtn.Enable()
 		}
 	}
@@ -103,12 +121,9 @@ func main() {
 	}
 
 	deleteBtn := widget.NewButtonWithIcon(
-		"Delete All", theme.CancelIcon(), func() {
-			list, _ := todos.Get()
-			list = list[:0]
-			todos.Set(list)
-			data = []models.Todo{}
-			count = 0
+		"Reset", theme.CancelIcon(), func() {
+			todos.Drop()
+
 			displayText.SetText("Display")
 		},
 	)
@@ -118,50 +133,14 @@ func main() {
 		todos,
 		// func that returns the component structure of the List Item
 		// exactly the same as the Simple List
-		func() fyne.CanvasObject {
-			return container.NewBorder(
-				nil, nil,
-				// ↓ left of the border ↓
-				widget.NewCheck("", func(b bool) {}),
-				// ↓ right of the border ↓
-				widget.NewButtonWithIcon("", theme.DeleteIcon(), nil),
-				// take the rest of the space ↓
-				widget.NewLabel("template"),
-			)
-		},
+		renderListItem,
 		// func that is called for each item in the list and allows
 		// but this time we get the actual DataItem we need to cast
-		func(di binding.DataItem, co fyne.CanvasObject) {
-			todo := models.NewTodoFromDataItem(di)
-			ctr, _ := co.(*fyne.Container)
-			// ideally we should check `ok` for each one of those casting
-			// but we know that they are those types for sure
-			l := ctr.Objects[0].(*widget.Label)
-			// l := ctr.Objects[0].(*tappableLabel)
-			c := ctr.Objects[1].(*widget.Check)
-			ctr.Objects[2].(*widget.Button).OnTapped = func() {
-				todos.Remove(todo)
-				filtered := []models.Todo{}
-				for _, t := range data {
-					if t.Id != todo.Id {
-						filtered = append(filtered, t)
-					}
-				}
-				data = filtered
-				count--
-				fmt.Printf("The ToDo with description %q has been successfully removed!\n", todo.Description)
-				displayText.SetText(fmt.Sprintf("%q has been successfully removed!", todo.Description))
-			}
-			/*
-				diu, _ := di.(binding.Untyped).Get()
-				todo := diu.(models.Todo)
-			*/
-			l.SetText(todo.Description)
-			c.SetChecked(todo.Done)
-		},
+		bindDataToList(displayText, &todos),
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		displayText.SetText(data[id].String())
+		t := todos.All()
+		displayText.SetText(t[id].String())
 		fmt.Printf("Selected item: %d\n", id)
 	}
 
@@ -171,56 +150,31 @@ func main() {
 			// this will be a the BOTTOM of the container
 			container.NewBorder(
 				displayText, // TOP
-				// BOTTOM ↓
-				deleteBtn,
-				nil, // LEFT
-				// RIGHT ↓
-				addBtn,
-				// take the rest of the space ↓
-				newTodoEntry,
+				deleteBtn,   // BOTTOM
+				nil,         // LEFT
+				addBtn,      // RIGHT
+				input,       // take the rest of the space ↓
 			),
-			nil, // Left
-			nil, // Right
-			// ↓ Static list ↓
-			/* widget.NewList(
-				func() int {
-					return len(data)
-				},
-				func() fyne.CanvasObject {
-					// return widget.NewLabel("template")
-					return container.NewBorder(
-						nil, nil, nil,
-						// right of the border
-						widget.NewCheck("", func(b bool) {}),
-						// take the rest of the space ↓
-						widget.NewLabel("template"),
-					)
-				},
-				func(lii widget.ListItemID, co fyne.CanvasObject) {
-					// co.(*widget.Label).SetText(data[lii].Description)
-					ctr, _ := co.(*fyne.Container)
-					// ideally we should check `ok` for each one of those casting
-					// but we know that they are those types for sure
-					l := ctr.Objects[0].(*widget.Label)
-					c := ctr.Objects[1].(*widget.Check)
-					l.SetText(data[lii].Description)
-					c.SetChecked(data[lii].Done)
-				},
-			), */
-			// the rest will take all the rest of the space
-			list,
+			nil,  // Left
+			nil,  // Right
+			list, // the rest will take all the rest of the space
 		),
 	)
 
-	w.Resize(fyne.NewSize(300, 400))
+	w.Canvas().Focus(input)
 	w.ShowAndRun()
 }
 
 /* REFERENCES:
+https://stackoverflow.com/questions/37932551/mkdir-if-not-exists-using-golang
+
 https://stackoverflow.com/questions/71971679/button-action-for-a-specific-list-item-in-fyne
 
 https://stackoverflow.com/questions/66896228/click-event-on-container
 https://docs.fyne.io/extend/extending-widgets
+
+Update a collection item given its ID:
+https://github.com/ostafen/clover/blob/v2/examples/update/main.go#L32
 */
 
 /* COMMANDS TO BUILD RELEASE:

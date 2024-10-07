@@ -1,3 +1,4 @@
 bin/
+.clover-db/
 
 *.tar.xz
