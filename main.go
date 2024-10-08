@@ -43,7 +43,7 @@ func renderListItem() fyne.CanvasObject {
 }
 
 func bindDataToList(
-	displayText *widget.Label, todos *services.Todos, w fyne.Window,
+	displayText *widget.Entry, todos *services.Todos, w fyne.Window,
 ) func(di binding.DataItem, co fyne.CanvasObject) {
 	return func(di binding.DataItem, co fyne.CanvasObject) {
 		t := models.NewTodoFromDataItem(di)
@@ -122,10 +122,9 @@ func main() {
 		}
 	}
 
-	displayText := &widget.Label{
-		Text:       "Display",
-		Truncation: fyne.TextTruncateEllipsis,
-	}
+	displayText := widget.NewEntry()
+	displayText.PlaceHolder = "Display"
+	displayText.Disable()
 
 	deleteBtn := widget.NewButtonWithIcon(
 		"Reset", theme.ViewRefreshIcon(), func() {
