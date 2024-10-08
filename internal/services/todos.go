@@ -60,6 +60,6 @@ func (t *Todos) Drop() {
 	t.Set(list)
 }
 
-/* func (t *Todos) Persist() {
+func (t *Todos) Persist() {
 	t.Dbase.Save(t.All())
-} */
+}

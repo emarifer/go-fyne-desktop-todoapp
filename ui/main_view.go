@@ -107,6 +107,12 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 		},
 	)
 
+	settingsBtn := widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
+		ctx.W.SetContent(GetSettingsView(ctx))
+	})
+
+	bottomCont := container.NewBorder(nil, nil, nil, settingsBtn, deleteBtn)
+
 	list := widget.NewListWithData(
 		// the binding.List type
 		ctx.Todos,
@@ -128,7 +134,7 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 		// this will be a the BOTTOM of the container
 		container.NewBorder(
 			displayText, // TOP
-			deleteBtn,   // BOTTOM
+			bottomCont,  // BOTTOM
 			nil,         // LEFT
 			addBtn,      // RIGHT
 			input,       // take the rest of the space ↓

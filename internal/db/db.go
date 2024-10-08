@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -114,7 +115,45 @@ func (db *Db) DeleteTodo(todo *models.Todo) bool {
 }
 
 func (db *Db) Drop() bool {
-	err := db.db.Delete(query.NewQuery(TODO_COLLECTION))
+	err := db.db.DropCollection(TODO_COLLECTION)
+
+	return err == nil
+}
+
+func (db *Db) ExportData() bool {
+	var (
+		homeDir string
+		err     error
+	)
+
+	homeDir, err = os.UserHomeDir()
+	if err != nil {
+		return err == nil
+	}
+	exportResult := filepath.Join(
+		homeDir, fmt.Sprintf("%s.json", TODO_COLLECTION),
+	)
+
+	err = db.db.ExportCollection(TODO_COLLECTION, exportResult)
+
+	return err == nil
+}
+
+func (db *Db) ImportData() bool {
+	var (
+		homeDir string
+		err     error
+	)
+
+	homeDir, err = os.UserHomeDir()
+	if err != nil {
+		return err == nil
+	}
+	importJSON := filepath.Join(
+		homeDir, fmt.Sprintf("%s.json", TODO_COLLECTION),
+	)
+
+	err = db.db.ImportCollection(TODO_COLLECTION, importJSON)
 
 	return err == nil
 }

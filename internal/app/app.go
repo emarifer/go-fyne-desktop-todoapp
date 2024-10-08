@@ -81,6 +81,8 @@ func (a *App) Run() {
 }
 
 func (a *App) Cleanup() {
+	a.ctx.Todos.Persist()
+
 	log.Println("Running cleanup")
 	a.ctx.Todos.Dbase.Close()
 	log.Println("Cleanup finished")
