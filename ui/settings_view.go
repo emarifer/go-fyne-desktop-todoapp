@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"net/url"
 
+	"github.com/emarifer/go-fyne-desktop-todoapp/internal/services"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -14,6 +16,8 @@ import (
 )
 
 func GetSettingsView(ctx *c.AppContext) *fyne.Container {
+	// Get data from the DB and bind it to an UntypedList
+	todos := services.NewTodosFromDb(ctx.Db)
 	url, _ := url.Parse("https://github.com/emarifer/go-fyne-desktop-todoapp")
 
 	// Setup Widgets
@@ -31,7 +35,7 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 
 	exportDataBtn := widget.NewButtonWithIcon(
 		"Export Data", theme.LogoutIcon(), func() {
-			result := ctx.Todos.Dbase.ExportData()
+			result := todos.Dbase.ExportData()
 			if result {
 				successMessage("Data exported successfully", successMsg)
 				return
@@ -42,9 +46,7 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 
 	importDataBtn := widget.NewButtonWithIcon(
 		"Import Data", theme.LoginIcon(), func() {
-			// The list needs to be cleared in order to import new data.
-			ctx.Todos.Drop()
-			result := ctx.Todos.Dbase.ImportData()
+			result := todos.Dbase.ImportData()
 			if result {
 				successMessage("Data imported successfully", successMsg)
 				return

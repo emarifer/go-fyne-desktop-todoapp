@@ -43,7 +43,14 @@ func MakeDb() Db {
 		log.Fatalf("🔥 failed to connect to the DB: %s\n", err.Error())
 	}
 
-	db.CreateCollection(TODO_COLLECTION)
+	collectionExists, err := db.HasCollection(TODO_COLLECTION)
+	if err != nil {
+		log.Fatalf("🔥 failed to check collection: %s\n", err.Error())
+	}
+
+	if !collectionExists {
+		db.CreateCollection(TODO_COLLECTION)
+	}
 
 	return Db{db}
 }
@@ -74,7 +81,7 @@ func (db *Db) InsertTodo(todo *models.Todo) bool {
 func (db *Db) GetAllTodos() []models.Todo {
 	docs, err := db.db.FindAll(query.NewQuery(TODO_COLLECTION).Sort(query.SortOption{Field: "created_at", Direction: 1}))
 	if err != nil {
-		log.Fatalln(err)
+		log.Printf("something went wrong: %s", err)
 	}
 
 	result := []models.Todo{}
@@ -87,25 +94,14 @@ func (db *Db) GetAllTodos() []models.Todo {
 
 func (db *Db) UpdateTodo(todo *models.Todo) bool {
 	updates := todo.ToMap()
-
+	// ↓ We delete the field that we do not want to update ↓
+	delete(updates, "created_at")
 	// creating the query when the Id field (whose default name is "_id")
 	// has the value of the todo that we pass to it
 	q := query.NewQuery(TODO_COLLECTION).Where(query.Field("_id").Eq(todo.Id))
 	err := db.db.Update(q, updates)
 
 	return err == nil
-}
-
-func (db *Db) Save(todos []*models.Todo) bool {
-	for _, t := range todos {
-		if t.Id == "" {
-			db.InsertTodo(t)
-		} else {
-			db.UpdateTodo(t)
-		}
-	}
-
-	return true
 }
 
 func (db *Db) DeleteTodo(todo *models.Todo) bool {
@@ -116,6 +112,13 @@ func (db *Db) DeleteTodo(todo *models.Todo) bool {
 
 func (db *Db) Drop() bool {
 	err := db.db.DropCollection(TODO_COLLECTION)
+	if err != nil {
+		return false
+	}
+
+	// After deleting the collection, if we want to save data again,
+	// we have to create a new empty collection
+	err = db.db.CreateCollection(TODO_COLLECTION)
 
 	return err == nil
 }
@@ -152,6 +155,13 @@ func (db *Db) ImportData() bool {
 	importJSON := filepath.Join(
 		homeDir, fmt.Sprintf("%s.json", TODO_COLLECTION),
 	)
+
+	// We delete the old collection so that
+	// the import generates a new `clean` collection
+	err = db.db.DropCollection(TODO_COLLECTION)
+	if err != nil {
+		return err == nil
+	}
 
 	err = db.db.ImportCollection(TODO_COLLECTION, importJSON)
 

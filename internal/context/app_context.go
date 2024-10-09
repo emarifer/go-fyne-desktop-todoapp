@@ -2,18 +2,18 @@ package context
 
 import (
 	"fyne.io/fyne/v2"
-	"github.com/emarifer/go-fyne-desktop-todoapp/internal/services"
+	"github.com/emarifer/go-fyne-desktop-todoapp/internal/db"
 )
 
 type AppContext struct {
-	Todos services.Todos
-	W     fyne.Window
+	Db db.IDb
+	W  fyne.Window
 }
 
-func NewAppContext(t services.Todos, w fyne.Window) AppContext {
+func NewAppContext(db db.IDb, w fyne.Window) AppContext {
 
 	return AppContext{
-		Todos: t,
-		W:     w,
+		Db: db,
+		W:  w,
 	}
 }

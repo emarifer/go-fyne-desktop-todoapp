@@ -69,9 +69,10 @@ func flasMessage(
 	textItem.Color = color
 	textItem.Text = msg
 
-	timer := time.NewTimer(duration)
-	<-timer.C // Blocks until timer duration is reached
-	textItem.Text = ""
+	go func() {
+		time.Sleep(duration)
+		textItem.Text = ""
+	}()
 }
 
 func newFlashTxtPlaceholder() *canvas.Text {

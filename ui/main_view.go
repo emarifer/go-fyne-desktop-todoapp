@@ -63,6 +63,8 @@ func bindDataToList(
 }
 
 func GetMainView(ctx *c.AppContext) *fyne.Container {
+	// Get data from the DB and bind it to an UntypedList
+	todos := services.NewTodosFromDb(ctx.Db)
 
 	// Setup Widgets
 	input := widget.NewEntry()
@@ -70,8 +72,7 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 	addBtn := widget.NewButtonWithIcon(
 		"Add", theme.DocumentCreateIcon(), func() {
 			t := models.NewTodo(input.Text)
-			ctx.Todos.Add(&t)
-			// todos.Add(&t)
+			todos.Add(&t)
 			input.SetText("")
 		},
 	)
@@ -99,7 +100,7 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 						return
 					}
 
-					ctx.Todos.Drop()
+					todos.Drop()
 
 					displayText.SetText("Display")
 				}, ctx.W,
@@ -115,16 +116,16 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 
 	list := widget.NewListWithData(
 		// the binding.List type
-		ctx.Todos,
+		todos,
 		// func that returns the component structure of the List Item
 		// exactly the same as the Simple List
 		renderListItem,
 		// func that is called for each item in the list and allows
 		// but this time we get the actual DataItem we need to cast
-		bindDataToList(displayText, &ctx.Todos, ctx.W),
+		bindDataToList(displayText, &todos, ctx.W),
 	)
 	list.OnSelected = func(id widget.ListItemID) {
-		t := ctx.Todos.All()
+		t := todos.All()
 		displayText.SetText(t[id].String())
 		fmt.Printf("Selected item: %d\n", id)
 	}

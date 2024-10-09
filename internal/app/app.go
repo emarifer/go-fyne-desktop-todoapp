@@ -5,7 +5,6 @@ import (
 	"log"
 
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/db"
-	"github.com/emarifer/go-fyne-desktop-todoapp/internal/services"
 	"github.com/emarifer/go-fyne-desktop-todoapp/ui"
 
 	"fyne.io/fyne/v2"
@@ -56,11 +55,9 @@ func NewApp() App {
 
 	// Create and connect to the DB
 	db := db.MakeDb()
-	// Get data from the DB and bind it to an UntypedList
-	todos := services.NewTodosFromDb(&db)
 
 	// Setup Context App
-	ctx := c.NewAppContext(todos, w)
+	ctx := c.NewAppContext(&db, w)
 
 	return App{
 		application: a,
@@ -81,9 +78,7 @@ func (a *App) Run() {
 }
 
 func (a *App) Cleanup() {
-	a.ctx.Todos.Persist()
-
 	log.Println("Running cleanup")
-	a.ctx.Todos.Dbase.Close()
+	a.ctx.Db.Close()
 	log.Println("Cleanup finished")
 }

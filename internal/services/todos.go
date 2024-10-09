@@ -8,17 +8,17 @@ import (
 )
 
 type Todos struct {
-	binding.UntypedList
-	Dbase *db.Db
+	binding.UntypedList // composition
+	Dbase               db.IDb
 }
 
-func NewTodosFromDb(db *db.Db) Todos {
+func NewTodosFromDb(db db.IDb) Todos {
 	todoList := db.GetAllTodos()
 
 	return newTodos(db, todoList)
 }
 
-func newTodos(db *db.Db, todos []models.Todo) Todos {
+func newTodos(db db.IDb, todos []models.Todo) Todos {
 	t := Todos{
 		binding.NewUntypedList(),
 		db,
@@ -55,11 +55,7 @@ func (t *Todos) All() []*models.Todo {
 func (t *Todos) Drop() {
 	t.Dbase.Drop()
 
-	list, _ := t.Get()
-	list = list[:0]
-	t.Set(list)
-}
-
-func (t *Todos) Persist() {
-	t.Dbase.Save(t.All())
+	// list, _ := t.Get()
+	// list = list[:0]
+	t.Set([]any{})
 }
