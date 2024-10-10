@@ -39,19 +39,19 @@ jobs:
 
 
 
-      - name: Install dependencies (Ubuntu only)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
+      # - name: Install dependencies (Ubuntu only)
+      #   if: ${{ matrix.os == 'ubuntu-latest' }}
+      #   run: |
+      #     sudo apt-get update
+      #     sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
 
-      - name: Build packages (Ubuntu only)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: make package-linux
+      # - name: Build packages (Ubuntu only)
+      #   if: ${{ matrix.os == 'ubuntu-latest' }}
+      #   run: make package-linux
 
-      - name: Rename file (Ubuntu only)
-        if: ${{ matrix.os == 'ubuntu-latest' }}
-        run: tar -xvf fToDo.tar.xz && tar -czvf fToDo_Linux_x86_64.tar.xz usr/ Makefile LICENSE.txt
+      # - name: Rename file (Ubuntu only)
+      #   if: ${{ matrix.os == 'ubuntu-latest' }}
+      #   run: tar -xvf fToDo.tar.xz && tar -czvf fToDo_Linux_x86_64.tar.xz usr/ Makefile LICENSE.txt
 
 
 
@@ -73,13 +73,13 @@ jobs:
 
 
       
-      - name: Build packages (Macos only)
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: package-darwin
+      # - name: Build packages (Macos only)
+      #   if: ${{ matrix.os == 'macos-latest' }}
+      #   run: package-darwin
 
-      - name: Zip Binary (Macos only)
-        if: ${{ matrix.os == 'macos-latest' }}
-        run: zip -vr fToDo_Darwin_x86_64.zip bin/ftodo.app LICENSE.txt -x "*.DS_Store"
+      # - name: Zip Binary (Macos only)
+      #   if: ${{ matrix.os == 'macos-latest' }}
+      #   run: zip -vr fToDo_Darwin_x86_64.zip bin/ftodo.app LICENSE.txt -x "*.DS_Store"
 
 
 
