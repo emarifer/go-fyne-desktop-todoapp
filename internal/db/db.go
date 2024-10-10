@@ -14,10 +14,7 @@ import (
 	d "github.com/ostafen/clover/v2/document"
 )
 
-const (
-	DB_NAME         = ".clover-db"
-	TODO_COLLECTION = "todos"
-)
+const TODO_COLLECTION = "todos"
 
 type Db struct {
 	db *c.DB

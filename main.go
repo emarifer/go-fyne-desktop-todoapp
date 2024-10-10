@@ -19,6 +19,9 @@ https://docs.fyne.io/extend/extending-widgets
 
 Update a collection item given its ID:
 https://github.com/ostafen/clover/blob/v2/examples/update/main.go#L32
+
+Advanced Go Build Techniques:
+https://dev.to/jacktt/go-build-in-advance-4o8n#iii-build-tags
 */
 
 /* COMMANDS TO BUILD RELEASE:
