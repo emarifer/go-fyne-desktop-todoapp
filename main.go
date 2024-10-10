@@ -22,5 +22,6 @@ https://github.com/ostafen/clover/blob/v2/examples/update/main.go#L32
 */
 
 /* COMMANDS TO BUILD RELEASE:
-fyne package --release -exe todoapp
+go build -ldflags="-s -w" -o ./bin/todoapp -tags=prod
+fyne package --release -exe todoapp --tags prod
 */

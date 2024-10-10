@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"github.com/emarifer/go-fyne-desktop-todoapp/configs"
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/models"
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/services"
 
@@ -46,7 +47,9 @@ func bindDataToList(
 				todos.Remove(t)
 				todos.Dbase.DeleteTodo(t)
 
-				fmt.Printf("The ToDo with description %q has been successfully removed!\n", t.Description)
+				if configs.EnableLogger {
+					fmt.Printf("The ToDo with description %q has been successfully removed!\n", t.Description)
+				}
 				displayText.SetText(fmt.Sprintf("%q has been successfully removed!", t.Description))
 			}, w)
 		}
@@ -103,14 +106,12 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 					todos.Drop()
 
 					displayText.SetText("Display")
-				}, ctx.W,
+				}, ctx.GetWindow(),
 			)
 		},
 	)
 
-	settingsBtn := widget.NewButtonWithIcon("", theme.SettingsIcon(), func() {
-		ctx.W.SetContent(GetSettingsView(ctx))
-	})
+	settingsBtn := navigateBtn(ctx, theme.SettingsIcon(), c.Settings)
 
 	bottomCont := container.NewBorder(nil, nil, nil, settingsBtn, deleteBtn)
 
@@ -122,12 +123,14 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 		renderListItem,
 		// func that is called for each item in the list and allows
 		// but this time we get the actual DataItem we need to cast
-		bindDataToList(displayText, &todos, ctx.W),
+		bindDataToList(displayText, &todos, ctx.GetWindow()),
 	)
 	list.OnSelected = func(id widget.ListItemID) {
 		t := todos.All()
 		displayText.SetText(t[id].String())
-		fmt.Printf("Selected item: %d\n", id)
+		if configs.EnableLogger {
+			fmt.Printf("Selected item: %d\n", id)
+		}
 	}
 
 	return container.NewBorder(

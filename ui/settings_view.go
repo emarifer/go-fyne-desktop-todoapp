@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"image/color"
 	"net/url"
 
@@ -25,11 +26,7 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 	errMsg := newFlashTxtPlaceholder()
 	msg := container.NewStack(successMsg, errMsg)
 
-	navigateBackBtn := widget.NewButtonWithIcon(
-		"", theme.NavigateBackIcon(), func() {
-			ctx.W.SetContent(GetMainView(ctx))
-		},
-	)
+	navigateBackBtn := navigateBtn(ctx, theme.NavigateBackIcon(), c.List)
 
 	left := container.NewBorder(nil, navigateBackBtn, nil, nil)
 
@@ -76,11 +73,11 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 				widget.NewLabel(
 					"fToDo is a task manager so you don't forget anything 😀",
 				),
-				small("v1.0.0"),
+				small(fmt.Sprintf("version: %s", ctx.Version)),
 				&canvas.Text{Text: "", TextSize: 24}, // spacer
 				&canvas.Text{
 					Text:      "More info:",
-					Color:     color.RGBA{207, 130, 37, 255},
+					Color:     color.RGBA{121, 196, 252, 255},
 					TextSize:  12,
 					Alignment: fyne.TextAlignCenter,
 					TextStyle: fyne.TextStyle{Bold: true},

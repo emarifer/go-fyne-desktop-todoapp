@@ -23,12 +23,14 @@ type Db struct {
 	db *c.DB
 }
 
-func MakeDb() Db {
+func MakeDb(dbFiles string) Db {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("🔥 user directory not available: %s\n", err.Error())
 	}
-	dbAddress := filepath.Join(homeDir, DB_NAME)
+	// creating the address of the folder where the DB files
+	// will be saved as a hidden folder in the user folder
+	dbAddress := filepath.Join(homeDir, fmt.Sprintf(".%s", dbFiles))
 	// It is necessary to create the folder that
 	// will contain the DB storage files
 	err = os.MkdirAll(dbAddress, os.ModePerm)

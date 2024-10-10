@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
+	"github.com/emarifer/go-fyne-desktop-todoapp/internal/context"
 )
 
 func h1(text string) *canvas.Text {
@@ -73,6 +75,15 @@ func flasMessage(
 		time.Sleep(duration)
 		textItem.Text = ""
 	}()
+}
+
+func navigateBtn(
+	ctx *context.AppContext, icon fyne.Resource, route context.AppRoute,
+) *widget.Button {
+
+	return widget.NewButtonWithIcon("", icon, func() {
+		ctx.NavigateTo(route)
+	})
 }
 
 func newFlashTxtPlaceholder() *canvas.Text {
