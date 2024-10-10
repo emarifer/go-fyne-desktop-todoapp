@@ -1,8 +1,8 @@
 [Details]
 Icon = "assets/logo.png"
 Name = "fToDo"
-ID = "com.emarifer.app"
-Version = "0.0.1"
+ID = "com.emarifer.ftodo"
+Version = "1.0.0"
 Build = 1
 
 [LinuxAndBSD]

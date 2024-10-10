@@ -1,0 +1,98 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: fToDo_Linux_x86_64.tar.xz
+          - os: windows-latest
+            artifact_name: fToDo_Windows_x86_64.zip
+          - os: macos-latest
+            artifact_name: fToDo_Darwin_x86_64.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Generate LICENSE & README files
+        run: make generate-textfiles
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.23.1
+
+      - name: Install Fyne CLI
+        run: go install fyne.io/fyne/v2/cmd/fyne@latest
+
+
+
+      - name: Install dependencies (Ubuntu only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
+
+      - name: Build packages (Ubuntu only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: make package-linux
+
+      - name: Rename file (Ubuntu only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+	        tar -xvf fToDo.tar.xz
+	        tar -czvf fToDo_Linux_x86_64.tar.xz usr/ Makefile LICENSE.txt
+
+
+
+      - name: Set up MinGW (Windows only)
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: egor-tensin/setup-mingw@v2
+        with:
+          platform: x64
+
+      - name: Build packages (Windows only)
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: make package-windows
+
+      - name: Zip Binary (Windows only)
+        if: ${{ matrix.os == 'windows-latest' }}
+        shell: pwsh
+        run: |
+	        Compress-Archive -Path "bin/ftodo.exe", "LICENSE.txt", "README.txt" -DestinationPath "fToDo_Windows_x86_64.zip"
+
+
+
+      
+      - name: Build packages (Macos only)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: package-darwin
+
+      - name: Zip Binary (Macos only)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: |
+	        zip -vr fToDo_Darwin_x86_64.zip bin/ftodo.app LICENSE.txt -x "*.DS_Store"
+
+
+
+
+      - name: Upload artifacts to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ matrix.artifact_name }}
+          tag: ${{ github.ref }}
+          overwrite: true
+          body: "release for Linux | Windows | Darwin for fToDo App - 1"
