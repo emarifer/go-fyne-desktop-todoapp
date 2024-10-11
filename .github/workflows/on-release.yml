@@ -10,17 +10,17 @@ permissions:
 
 jobs:
   build:
-    name: Publish windows
-    runs-on: windows-latest
-    # strategy:
-    #   matrix:
-    #     include:
-    #       - os: ubuntu-latest
-    #         artifact_name: fToDo_Linux_x86_64.tar.xz
-    #       - os: windows-latest
-    #         artifact_name: fToDo_Windows_x86_64.zip
-    #       - os: macos-latest
-    #         artifact_name: fToDo_Darwin_x86_64.zip
+    name: Publish for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: fToDo_Linux_x86_64.tar.xz
+          - os: windows-latest
+            artifact_name: fToDo_Windows_x86_64.zip
+          # - os: macos-latest
+          #   artifact_name: fToDo_Darwin_x86_64.zip
 
     steps:
       - name: Checkout
@@ -39,34 +39,36 @@ jobs:
 
 
 
-      # - name: Install dependencies (Ubuntu only)
-      #   if: ${{ matrix.os == 'ubuntu-latest' }}
-      #   run: |
-      #     sudo apt-get update
-      #     sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
+      - name: Install dependencies (Ubuntu only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc libgl1-mesa-dev xorg-dev
 
-      # - name: Build packages (Ubuntu only)
-      #   if: ${{ matrix.os == 'ubuntu-latest' }}
-      #   run: make package-linux
+      - name: Build packages (Ubuntu only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: make package-linux
 
-      # - name: Rename file (Ubuntu only)
-      #   if: ${{ matrix.os == 'ubuntu-latest' }}
-      #   run: tar -xvf fToDo.tar.xz && tar -czvf fToDo_Linux_x86_64.tar.xz usr/ Makefile LICENSE.txt
+      - name: Rename file (Ubuntu only)
+        if: ${{ matrix.os == 'ubuntu-latest' }}
+        run: tar -xvf fToDo.tar.xz && tar -czvf fToDo_Linux_x86_64.tar.xz usr/ Makefile LICENSE.txt
 
 
 
-      - name: Set up MinGW (Windows only)
-        # if: ${{ matrix.os == 'windows-latest' }}
-        uses: egor-tensin/setup-mingw@v2
+      - name: Setup MSYS2 (Window only)
+        if: ${{ matrix.os == 'windows-latest' }}
+        uses: msys2/setup-msys2@v2
         with:
-          platform: x64
+          # update: true
+          msystem: mingw64
+          install: mingw-w64-x86_64-toolchain
 
       - name: Build packages (Windows only)
-        # if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' }}
         run: make package-windows
 
       - name: Zip Binary (Windows only)
-        # if: ${{ matrix.os == 'windows-latest' }}
+        if: ${{ matrix.os == 'windows-latest' }}
         shell: pwsh
         run: Compress-Archive -Path "bin/ftodo.exe", "LICENSE.txt", "README.txt" -DestinationPath "fToDo_Windows_x86_64.zip"
 
@@ -88,8 +90,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          # file: ${{ matrix.artifact_name }}
-          file: fToDo_Windows_x86_64.zip
+          file: ${{ matrix.artifact_name }}
           tag: ${{ github.ref }}
           overwrite: true
-          body: "release for Windowsfor fToDo App - 3"
+          body: "release for Linux | Windows for fToDo App - 4"

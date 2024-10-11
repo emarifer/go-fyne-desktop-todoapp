@@ -25,6 +25,7 @@ https://dev.to/jacktt/go-build-in-advance-4o8n#iii-build-tags
 */
 
 /* COMMANDS TO BUILD RELEASE:
+git tag v1.0.3 && git push origin v1.0.3
 go build -ldflags="-s -w" -o ./bin/todoapp -tags=prod
 fyne package --release -exe todoapp --tags prod
 */
