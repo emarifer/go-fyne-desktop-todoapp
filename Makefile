@@ -10,7 +10,7 @@ build-prod:
 clean:
 	rm -rf bin/
 
-# Only for releases on Github Actions
+# For releases on Github Actions
 generate-textfiles:
 	sh scripts/generate_license-readme.sh
 
@@ -25,8 +25,6 @@ package-windows:
 	sh scripts/restore_version.sh
 
 package-darwin:
-	mkdir bin
 	sh scripts/update_version.sh
 	fyne package -os darwin --release --tags prod
-	mv ftodo.app bin/
 	sh scripts/restore_version.sh

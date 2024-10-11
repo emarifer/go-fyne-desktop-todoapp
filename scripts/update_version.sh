@@ -1,3 +1,3 @@
 # Script to update prod version on configs
-version=$(git rev-parse --short HEAD)
+version=$(git describe --abbrev=0 --tags)
 sed -i'.bak' -e "s/PROD_VERSION/$version/g" configs/conf_prod.go

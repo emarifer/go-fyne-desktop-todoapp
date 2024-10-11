@@ -80,7 +80,7 @@ jobs:
 
       - name: Zip Binary (Macos only)
         if: ${{ matrix.os == 'macos-latest' }}
-        run: zip -vr fToDo_Darwin_x86_64.zip bin/ftodo.app LICENSE.txt -x "*.DS_Store"
+        run: zip -vr fToDo_Darwin_x86_64.zip ftodo.app LICENSE.txt -x "*.DS_Store"
 
 
 
@@ -92,4 +92,4 @@ jobs:
           file: ${{ matrix.artifact_name }}
           tag: ${{ github.ref }}
           overwrite: true
-          body: "release for Linux | Windows | Darwin for fToDo App - 5"
+          body: "- Update scripts to display the version tag in the settings view instead of the commit hash"
