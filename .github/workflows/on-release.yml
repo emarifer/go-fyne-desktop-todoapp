@@ -76,7 +76,7 @@ jobs:
       
       - name: Build packages (Macos only)
         if: ${{ matrix.os == 'macos-latest' }}
-        run: package-darwin
+        run: make package-darwin
 
       - name: Zip Binary (Macos only)
         if: ${{ matrix.os == 'macos-latest' }}
