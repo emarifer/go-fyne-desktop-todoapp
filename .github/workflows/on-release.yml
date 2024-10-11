@@ -19,8 +19,8 @@ jobs:
             artifact_name: fToDo_Linux_x86_64.tar.xz
           - os: windows-latest
             artifact_name: fToDo_Windows_x86_64.zip
-          # - os: macos-latest
-          #   artifact_name: fToDo_Darwin_x86_64.zip
+          - os: macos-latest
+            artifact_name: fToDo_Darwin_x86_64.zip
 
     steps:
       - name: Checkout
@@ -59,7 +59,6 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         uses: msys2/setup-msys2@v2
         with:
-          # update: true
           msystem: mingw64
           install: mingw-w64-x86_64-toolchain
 
@@ -75,13 +74,13 @@ jobs:
 
 
       
-      # - name: Build packages (Macos only)
-      #   if: ${{ matrix.os == 'macos-latest' }}
-      #   run: package-darwin
+      - name: Build packages (Macos only)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: package-darwin
 
-      # - name: Zip Binary (Macos only)
-      #   if: ${{ matrix.os == 'macos-latest' }}
-      #   run: zip -vr fToDo_Darwin_x86_64.zip bin/ftodo.app LICENSE.txt -x "*.DS_Store"
+      - name: Zip Binary (Macos only)
+        if: ${{ matrix.os == 'macos-latest' }}
+        run: zip -vr fToDo_Darwin_x86_64.zip bin/ftodo.app LICENSE.txt -x "*.DS_Store"
 
 
 
@@ -93,4 +92,4 @@ jobs:
           file: ${{ matrix.artifact_name }}
           tag: ${{ github.ref }}
           overwrite: true
-          body: "release for Linux | Windows for fToDo App - 4"
+          body: "release for Linux | Windows | Darwin for fToDo App - 5"
