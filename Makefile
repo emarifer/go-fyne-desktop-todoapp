@@ -27,6 +27,6 @@ package-windows:
 package-darwin:
 	mkdir bin
 	sh scripts/update_version.sh
-	fyne package -os darwin --release -exe ftodo.app --tags prod
+	fyne package -os darwin --release --tags prod
 	mv ftodo.app bin/
 	sh scripts/restore_version.sh
