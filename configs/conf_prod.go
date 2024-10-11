@@ -10,5 +10,5 @@ const (
 	WindowFixed  = true
 	DbFiles      = "ftodo_db"
 	EnableLogger = false
-	Version      = "v1.0.7"
+	Version      = "PROD_VERSION"
 )
