@@ -24,8 +24,13 @@ func NewTodoFromDataItem(di binding.DataItem) *Todo {
 }
 
 func (t Todo) String() string {
+	done := "❌"
+	if t.Done {
+		done = "✅"
+	}
+
 	return fmt.Sprintf(
-		"%s • %s", t.Description, t.CreatedAt.Format(time.RFC822Z),
+		"%s | %s • %s", done, t.Description, t.CreatedAt.Format(time.RFC822Z),
 	)
 }
 
