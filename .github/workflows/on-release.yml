@@ -92,4 +92,4 @@ jobs:
           file: ${{ matrix.artifact_name }}
           tag: ${{ github.ref }}
           overwrite: true
-          body: "- Update scripts to display the version tag in the settings view instead of the commit hash"
+          body: "- add check mark/cross mark emojis to task display"
