@@ -92,4 +92,4 @@ jobs:
           file: ${{ matrix.artifact_name }}
           tag: ${{ github.ref }}
           overwrite: true
-          body: "- add check mark/cross mark emojis to task display"
+          body: "- add light/dark theme switch"

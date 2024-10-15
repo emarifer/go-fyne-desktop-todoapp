@@ -9,37 +9,54 @@ import (
 type AppContext struct {
 	Db      db.IDb
 	Route   binding.String
+	Theme   binding.String
 	Version string
 	w       fyne.Window
 }
 
 func NewAppContext(
-	db db.IDb, initialRoute AppRoute, window fyne.Window,
+	db db.IDb, initialRoute AppRoute, initialTheme AppTheme, window fyne.Window,
 ) AppContext {
 	route := initialRoute.String()
+	theme := initialTheme.String()
 
 	return AppContext{
 		Db:    db,
 		Route: binding.BindString(&route),
+		Theme: binding.BindString(&theme),
 		w:     window,
 	}
 }
 
-func (ap *AppContext) GetWindow() fyne.Window {
+func (ac *AppContext) GetWindow() fyne.Window {
 
-	return ap.w
+	return ac.w
 }
 
-func (ap *AppContext) OnRouteChange(callback func()) {
-	ap.Route.AddListener(binding.NewDataListener(callback))
+func (ac *AppContext) OnRouteChange(callback func()) {
+	ac.Route.AddListener(binding.NewDataListener(callback))
 }
 
-func (ap *AppContext) CurrentRoute() AppRoute {
-	r, _ := ap.Route.Get()
+func (ac *AppContext) OnThemeChange(callback func()) {
+	ac.Theme.AddListener(binding.NewDataListener(callback))
+}
+
+func (ac *AppContext) CurrentRoute() AppRoute {
+	r, _ := ac.Route.Get()
 
 	return RouteFromString(r)
 }
 
-func (ap *AppContext) NavigateTo(route AppRoute) {
-	ap.Route.Set(route.String())
+func (ac *AppContext) CurrentTheme() AppTheme {
+	t, _ := ac.Theme.Get()
+
+	return ThemeFromString(t)
+}
+
+func (ac *AppContext) NavigateTo(route AppRoute) {
+	ac.Route.Set(route.String())
+}
+
+func (ac *AppContext) ChangeThemeTo(theme AppTheme) {
+	ac.Theme.Set(theme.String())
 }

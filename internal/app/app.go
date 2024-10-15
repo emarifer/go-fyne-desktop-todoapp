@@ -29,6 +29,11 @@ func (f *forcedVariant) Color(
 	return f.Theme.Color(name, f.variant)
 }
 
+var themesMap = map[c.AppTheme]fyne.ThemeVariant{
+	c.Light: theme.VariantLight,
+	c.Dark:  theme.VariantDark,
+}
+
 type App struct {
 	application     fyne.App
 	ctx             *c.AppContext
@@ -40,10 +45,6 @@ type App struct {
 func NewApp() App {
 	// Setup Application & Window
 	a := app.NewWithID(configs.AppId)
-	a.Settings().SetTheme(&forcedVariant{
-		Theme:   theme.DefaultTheme(),
-		variant: theme.VariantDark,
-	})
 	w := a.NewWindow(configs.WindowTitle)
 	w.Resize(fyne.NewSize(configs.WindowWidth, configs.WindowHeight))
 	w.SetFixedSize(configs.WindowFixed)
@@ -90,6 +91,23 @@ func (a *App) setView() {
 	(*a.window).SetContent(a.getView())
 }
 
+func (a *App) getVariant() fyne.ThemeVariant {
+	key := a.ctx.CurrentTheme()
+
+	if variant, ok := themesMap[key]; ok {
+		return variant
+	}
+
+	return themesMap[c.Dark]
+}
+
+func (a *App) setVariant() {
+	a.application.Settings().SetTheme(&forcedVariant{
+		Theme:   theme.DefaultTheme(),
+		variant: a.getVariant(),
+	})
+}
+
 func (a *App) log(msg string) {
 	if a.isLoggerEnabled {
 		log.Println(msg)
@@ -97,7 +115,7 @@ func (a *App) log(msg string) {
 }
 
 func (a *App) Run() {
-	// adding the callback to the listener
+	// adding the callback to the listener for view change
 	a.ctx.OnRouteChange(func() {
 		value := a.ctx.CurrentRoute()
 		// log.Printf("route state changed %s", value)
@@ -106,6 +124,16 @@ func (a *App) Run() {
 		a.setView()
 	})
 
+	// adding the callback to the listener for changing themes
+	a.ctx.OnThemeChange(func() {
+		value := a.ctx.CurrentTheme()
+		// log.Printf("route state changed %s", value)
+		a.log(fmt.Sprintf("theme state changed %s", value))
+
+		a.setVariant()
+	})
+
+	a.setVariant()
 	a.setView()
 	(*a.window).ShowAndRun()
 
@@ -122,10 +150,8 @@ func (a *App) Cleanup() {
 }
 
 func setupContext(db *db.Db, w fyne.Window) c.AppContext {
-	initialRoute := c.List
-
 	// TODO: in a real application, a condition could be placed here,
 	// e.g. the user's login state, to set an initial view in the context.
 
-	return c.NewAppContext(db, initialRoute, w)
+	return c.NewAppContext(db, configs.InitialRoute, configs.InitialTheme, w)
 }

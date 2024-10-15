@@ -30,6 +30,8 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 
 	left := container.NewBorder(nil, navigateBackBtn, nil, nil)
 
+	themeChangeBtn := themeChangeBtn(ctx, theme.ColorPaletteIcon())
+
 	exportDataBtn := widget.NewButtonWithIcon(
 		"Export Data", theme.LogoutIcon(), func() {
 			result := todos.Dbase.ExportData()
@@ -52,7 +54,11 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 		},
 	)
 
-	dataManagement := container.NewVBox(importDataBtn, exportDataBtn)
+	settingsManagement := container.NewVBox(
+		themeChangeBtn,
+		importDataBtn,
+		exportDataBtn,
+	)
 
 	link := widget.NewHyperlinkWithStyle(
 		"https://github.com/emarifer/go-fyne-desktop-todoapp",
@@ -64,7 +70,7 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 	return container.NewBorder(
 		nil, // TOP of the container
 		// ↓ this will be a the BOTTOM of the container ↓
-		container.NewBorder(nil, nil, left, dataManagement, centered(msg)),
+		container.NewBorder(nil, nil, left, settingsManagement, centered(msg)),
 		nil, // Left
 		nil, // Right
 		container.NewCenter(

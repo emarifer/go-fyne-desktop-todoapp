@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/context"
 )
 
@@ -83,6 +84,20 @@ func navigateBtn(
 
 	return widget.NewButtonWithIcon("", icon, func() {
 		ctx.NavigateTo(route)
+	})
+}
+
+func themeChangeBtn(
+	ctx *context.AppContext, icon fyne.Resource,
+) *widget.Button {
+
+	return widget.NewButtonWithIcon("Change Theme", icon, func() {
+		switch ctx.CurrentTheme() {
+		case context.Dark:
+			ctx.ChangeThemeTo(context.Light)
+		case context.Light:
+			ctx.ChangeThemeTo(context.Dark)
+		}
 	})
 }
 

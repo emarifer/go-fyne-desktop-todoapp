@@ -17,6 +17,26 @@ import (
 	c "github.com/emarifer/go-fyne-desktop-todoapp/internal/context"
 )
 
+type tappableEntry struct {
+	widget.Entry
+}
+
+func newTappableEntry() *tappableEntry {
+	e := &tappableEntry{
+		widget.Entry{
+			PlaceHolder: "Display",
+			TextStyle:   fyne.TextStyle{Monospace: true},
+		},
+	}
+	e.ExtendBaseWidget(e)
+
+	return e
+}
+
+func (e *tappableEntry) Tapped(_ *fyne.PointEvent) {
+	e.Disable()
+}
+
 func renderListItem() fyne.CanvasObject {
 	return container.NewBorder(
 		nil, nil, // Top & bottom
@@ -30,7 +50,7 @@ func renderListItem() fyne.CanvasObject {
 }
 
 func bindDataToList(
-	displayText *widget.Entry, todos *services.Todos, w fyne.Window,
+	displayText *tappableEntry, todos *services.Todos, w fyne.Window,
 ) func(di binding.DataItem, co fyne.CanvasObject) {
 	return func(di binding.DataItem, co fyne.CanvasObject) {
 		t := models.NewTodoFromDataItem(di)
@@ -88,10 +108,7 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 		}
 	}
 
-	displayText := widget.NewEntry()
-	displayText.PlaceHolder = "Display"
-	displayText.TextStyle = fyne.TextStyle{Monospace: true}
-	displayText.Disable()
+	displayText := newTappableEntry()
 
 	deleteBtn := widget.NewButtonWithIcon(
 		"Reset", theme.ViewRefreshIcon(), func() {
@@ -128,6 +145,7 @@ func GetMainView(ctx *c.AppContext) *fyne.Container {
 	list.OnSelected = func(id widget.ListItemID) {
 		t := todos.All()
 		displayText.SetText(t[id].String())
+		displayText.Enable()
 		if configs.EnableLogger {
 			fmt.Printf("Selected item: %d\n", id)
 		}
