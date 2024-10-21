@@ -92,4 +92,4 @@ jobs:
           file: ${{ matrix.artifact_name }}
           tag: ${{ github.ref }}
           overwrite: true
-          body: "- add light/dark theme switch"
+          body: "- Migrate the application to use SQLite instead of CloverDB"

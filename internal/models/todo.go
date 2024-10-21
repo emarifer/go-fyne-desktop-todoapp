@@ -5,17 +5,18 @@ import (
 	"time"
 
 	"fyne.io/fyne/v2/data/binding"
+	"github.com/google/uuid"
 )
 
 type Todo struct {
 	Id          string
-	Description string    `clover:"description"`
-	Done        bool      `clover:"done"`
-	CreatedAt   time.Time `clover:"created_at"`
+	Description string
+	Done        bool
+	CreatedAt   time.Time
 }
 
 func NewTodo(description string) Todo {
-	return Todo{Description: description, Done: false, CreatedAt: time.Now()}
+	return Todo{Id: uuid.NewString(), Description: description}
 }
 
 func NewTodoFromDataItem(di binding.DataItem) *Todo {
@@ -30,23 +31,10 @@ func (t Todo) String() string {
 	}
 
 	return fmt.Sprintf(
-		"%s | %s • %s", done, t.Description, t.CreatedAt.Format(time.RFC822Z),
+		"%s | %s • %s", done, t.Description, t.CreatedAt.Format(time.DateTime),
 	)
 }
 
-func (t *Todo) MarkAsDone() {
-	t.Done = true
-}
-
-func (t *Todo) MarkAsToDo() {
-	t.Done = false
-}
-
-func (t *Todo) ToMap() map[string]interface{} {
-	result := map[string]interface{}{}
-	result["description"] = t.Description
-	result["done"] = t.Done
-	result["created_at"] = t.CreatedAt // .Format(time.RFC822Z)
-
-	return result
-}
+/* time.DateTime:
+https://pkg.go.dev/time#pkg-constants
+*/

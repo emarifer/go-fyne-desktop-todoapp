@@ -1,6 +1,8 @@
 package services
 
 import (
+	"time"
+
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/db"
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/models"
 
@@ -32,8 +34,12 @@ func newTodos(db db.IDb, todos []models.Todo) Todos {
 }
 
 func (t *Todos) Add(todo *models.Todo) {
-	if todo.Id == "" {
-		t.Dbase.InsertTodo(todo)
+	// If created_at is the value 'zero' of time.Time,
+	// we insert the data into the DB
+	var dt *time.Time
+	if todo.CreatedAt.String() == "0001-01-01 00:00:00 +0000 UTC" {
+		dt, _ = t.Dbase.InsertTodo(todo)
+		todo.CreatedAt = *dt
 	}
 
 	t.Prepend(todo)

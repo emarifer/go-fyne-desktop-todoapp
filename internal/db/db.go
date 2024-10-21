@@ -1,54 +1,57 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
+	"time"
 
+	"github.com/earthboundkid/csv/v2"
 	"github.com/emarifer/go-fyne-desktop-todoapp/internal/models"
+	"github.com/google/uuid"
 
-	"github.com/ostafen/clover/v2/query"
+	"github.com/joho/sqltocsv"
 
-	c "github.com/ostafen/clover/v2"
-	d "github.com/ostafen/clover/v2/document"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-const TODO_COLLECTION = "todos"
+const FTODO_TABLE_NAME = "ftodos"
 
 type Db struct {
-	db *c.DB
+	db *sql.DB
 }
 
-func MakeDb(dbFiles string) Db {
+func MakeDb(DbName string) Db {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		log.Fatalf("🔥 user directory not available: %s\n", err.Error())
 	}
-	// creating the address of the folder where the DB files
-	// will be saved as a hidden folder in the user folder
-	dbAddress := filepath.Join(homeDir, fmt.Sprintf(".%s", dbFiles))
-	// It is necessary to create the folder that
-	// will contain the DB storage files
-	err = os.MkdirAll(dbAddress, os.ModePerm)
+	// creating the address of the file where the DB
+	// will be saved as a hidden file in the user folder
+	dDAddress := filepath.Join(homeDir, fmt.Sprintf(".%s", DbName))
+
+	// Init SQLite3 database
+	db, err := sql.Open("sqlite3", dDAddress)
 	if err != nil {
-		log.Fatalf(
-			"🔥 an error occurred while creating the DB directory: %s\n",
-			err.Error(),
-		)
-	}
-	db, err := c.Open(dbAddress)
-	if err != nil {
-		log.Fatalf("🔥 failed to connect to the DB: %s\n", err.Error())
+		log.Fatalf("🔥 failed to connect to the DB: %s\n", err)
 	}
 
-	collectionExists, err := db.HasCollection(TODO_COLLECTION)
-	if err != nil {
-		log.Fatalf("🔥 failed to check collection: %s\n", err.Error())
-	}
+	sqlStr := fmt.Sprintf(
+		`CREATE TABLE IF NOT EXISTS %s (
+			id TEXT NOT NULL PRIMARY KEY,
+			description TEXT NOT NULL,
+			done BOOLEAN DEFAULT(FALSE),
+			created_at DATE DEFAULT (datetime('now','localtime'))
+			);`, FTODO_TABLE_NAME,
+	)
 
-	if !collectionExists {
-		db.CreateCollection(TODO_COLLECTION)
+	_, err = db.Exec(sqlStr)
+	if err != nil {
+		log.Fatalf("🔥 failed to create table: %s\n", err)
 	}
 
 	return Db{db}
@@ -57,69 +60,102 @@ func MakeDb(dbFiles string) Db {
 func (db *Db) Close() {
 	err := db.db.Close()
 	if err != nil {
-		log.Fatalf("🔥 failed to close the connection DB: %s\n", err.Error())
+		log.Fatalf("🔥 failed to close the connection DB: %s\n", err)
 	}
 }
 
-func formatTodo(doc *d.Document) models.Todo {
+func (db *Db) InsertTodo(todo *models.Todo) (*time.Time, bool) {
+	sqlStr := fmt.Sprintf(`INSERT INTO %s (id, description)
+		VALUES(?, ?) RETURNING created_at`, FTODO_TABLE_NAME)
+
+	stmt, err := db.db.Prepare(sqlStr)
+	if err != nil {
+		return nil, err == nil
+	}
+
+	defer stmt.Close()
+
 	t := models.Todo{}
-	doc.Unmarshal(&t)
-	t.Id = doc.ObjectId()
 
-	return t
-}
+	err = stmt.QueryRow(todo.Id, todo.Description).Scan(&t.CreatedAt)
+	if err != nil {
+		return nil, err == nil
+	}
 
-func (db *Db) InsertTodo(todo *models.Todo) bool {
-	doc := d.NewDocumentOf(todo.ToMap())
-	id, err := db.db.InsertOne(TODO_COLLECTION, doc)
-	todo.Id = id
-
-	return err == nil
+	return &t.CreatedAt, true
 }
 
 func (db *Db) GetAllTodos() []models.Todo {
-	docs, err := db.db.FindAll(query.NewQuery(TODO_COLLECTION).Sort(query.SortOption{Field: "created_at", Direction: 1}))
+	todos := []models.Todo{}
+
+	query := fmt.Sprintf("SELECT * FROM %s", FTODO_TABLE_NAME)
+
+	rows, err := db.db.Query(query)
 	if err != nil {
-		log.Printf("something went wrong: %s", err)
+		return todos
+	}
+	// We close the resource
+	defer rows.Close()
+
+	t := models.Todo{}
+
+	for rows.Next() {
+		rows.Scan(&t.Id, &t.Description, &t.Done, &t.CreatedAt)
+
+		todos = append(todos, t)
 	}
 
-	result := []models.Todo{}
-	for _, doc := range docs {
-		result = append(result, formatTodo(doc))
-	}
-
-	return result
+	return todos
 }
 
 func (db *Db) UpdateTodo(todo *models.Todo) bool {
-	updates := todo.ToMap()
-	// ↓ We delete the field that we do not want to update ↓
-	delete(updates, "created_at")
-	// creating the query when the Id field (whose default name is "_id")
-	// has the value of the todo that we pass to it
-	q := query.NewQuery(TODO_COLLECTION).Where(query.Field("_id").Eq(todo.Id))
-	err := db.db.Update(q, updates)
+	query := fmt.Sprintf(`UPDATE %s SET done = ?
+		WHERE id=?`, FTODO_TABLE_NAME)
 
-	return err == nil
+	stmt, err := db.db.Prepare(query)
+	if err != nil {
+		return err == nil
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(todo.Done, todo.Id)
+	if err != nil {
+		return err == nil
+	}
+
+	return true
 }
 
 func (db *Db) DeleteTodo(todo *models.Todo) bool {
-	err := db.db.DeleteById(TODO_COLLECTION, todo.Id)
 
-	return err == nil
+	query := fmt.Sprintf(`DELETE FROM %s
+		WHERE id=?`, FTODO_TABLE_NAME)
+
+	stmt, err := db.db.Prepare(query)
+	if err != nil {
+		return err == nil
+	}
+
+	defer stmt.Close()
+
+	_, err = stmt.Exec(todo.Id)
+	if err != nil {
+		return err == nil
+	}
+
+	return true
 }
 
 func (db *Db) Drop() bool {
-	err := db.db.DropCollection(TODO_COLLECTION)
+	sqlStr := fmt.Sprintf(`DELETE FROM %s;`, FTODO_TABLE_NAME)
+
+	_, err := db.db.Exec(sqlStr)
 	if err != nil {
-		return false
+		return err == nil
 	}
 
-	// After deleting the collection, if we want to save data again,
-	// we have to create a new empty collection
-	err = db.db.CreateCollection(TODO_COLLECTION)
-
-	return err == nil
+	return true
 }
 
 func (db *Db) ExportData() bool {
@@ -133,12 +169,24 @@ func (db *Db) ExportData() bool {
 		return err == nil
 	}
 	exportResult := filepath.Join(
-		homeDir, fmt.Sprintf("%s.json", TODO_COLLECTION),
+		homeDir, fmt.Sprintf("%s.csv", FTODO_TABLE_NAME),
 	)
 
-	err = db.db.ExportCollection(TODO_COLLECTION, exportResult)
+	query := fmt.Sprintf("SELECT * FROM %s", FTODO_TABLE_NAME)
 
-	return err == nil
+	rows, err := db.db.Query(query)
+	if err != nil {
+		return err == nil
+	}
+	// We close the resource
+	defer rows.Close()
+
+	err = sqltocsv.WriteFile(exportResult, rows)
+	if err != nil {
+		return err == nil
+	}
+
+	return true
 }
 
 func (db *Db) ImportData() bool {
@@ -151,23 +199,101 @@ func (db *Db) ImportData() bool {
 	if err != nil {
 		return err == nil
 	}
-	importJSON := filepath.Join(
-		homeDir, fmt.Sprintf("%s.json", TODO_COLLECTION),
+	importCSV := filepath.Join(
+		homeDir, fmt.Sprintf("%s.csv", FTODO_TABLE_NAME),
 	)
 
-	// We delete the old collection so that
-	// the import generates a new `clean` collection
-	err = db.db.DropCollection(TODO_COLLECTION)
+	// We delete the old table so that
+	// the import generates a new `clean` table
+	if ok := db.Drop(); !ok {
+		return ok
+	}
+
+	data, err := os.ReadFile(importCSV)
 	if err != nil {
 		return err == nil
 	}
 
-	err = db.db.ImportCollection(TODO_COLLECTION, importJSON)
+	csvOpt := csv.Options{Reader: strings.NewReader(string(data))}
+	rowsMap, err := csvOpt.ReadAll()
+	if err != nil {
+		return err == nil
+	}
 
-	return err == nil
+	sqlStr := fmt.Sprintf("INSERT INTO %s(id, description, done, created_at) VALUES ", FTODO_TABLE_NAME)
+	vals := []interface{}{}
+
+	for _, row := range rowsMap {
+		sqlStr += "(?, ?, ?, ?),"
+		vals = append(
+			vals,
+			uuid.NewString(),
+			row["description"],
+			convertToBool(row["done"]),
+			convertToDatetime(row["created_at"]),
+		)
+	}
+	// trim the last `,`
+	sqlStr = strings.TrimSuffix(sqlStr, ",")
+
+	// prepare the statement
+	stmt, err := db.db.Prepare(sqlStr)
+	if err != nil {
+		return err == nil
+	}
+
+	defer stmt.Close()
+
+	// format all vals at once
+	_, err = stmt.Exec(vals...)
+	if err != nil {
+		return err == nil
+	}
+
+	return true
 }
 
-/*
+func convertToBool(s string) bool {
+	boolValue, err := strconv.ParseBool(s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return boolValue
+}
+
+func convertToDatetime(s string) time.Time {
+	layout := "2006-01-02 15:04:05 -0700 MST"
+	date, err := time.Parse(layout, s)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return date
+}
+
+/* REFERENCES:
+How to create timestamp column with default value 'now'?:
+https://stackoverflow.com/questions/200309/how-to-create-timestamp-column-with-default-value-now
+Convert UTC string to time object:
+https://stackoverflow.com/questions/38798043/convert-utc-string-to-time-object
+https://dev.to/luthfisauqi17/golangs-unique-way-to-parse-string-to-time-2jmk
+Querying for data:
+https://go.dev/doc/database/querying
+Go CSV reader like Python's DictReader:
+https://github.com/earthboundkid/csv/blob/master/example_test.go
+https://pkg.go.dev/github.com/carlmjohnson/csv#FieldReader.ReadAll
+
+How to insert multiple data at once:
+https://stackoverflow.com/questions/21108084/how-to-insert-multiple-data-at-once
+
+https://stackoverflow.com/questions/69217606/bulk-insert-rows-from-an-array-to-an-sql-server-with-golang
+https://golangbot.com/mysql-create-table-insert-row/
+
+https://github.com/joho/sqltocsv
+
+https://universalglue.dev/posts/csv-to-sqlite/
+https://ahdeyy.hashnode.dev/converting-csv-data-to-sqlite-in-golang
+https://github.com/Ahdeyyy/SpotifyTop2018
+
 UPDATE A COLLECTION ITEM GIVEN ITS ID:
 https://github.com/ostafen/clover/blob/v2/examples/update/main.go#L32
 */

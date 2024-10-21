@@ -30,7 +30,7 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 
 	left := container.NewBorder(nil, navigateBackBtn, nil, nil)
 
-	themeChangeBtn := themeChangeBtn(ctx, theme.ColorPaletteIcon())
+	toggleThemeBtn := toggleThemeBtn(ctx, theme.ColorPaletteIcon())
 
 	exportDataBtn := widget.NewButtonWithIcon(
 		"Export Data", theme.LogoutIcon(), func() {
@@ -55,7 +55,7 @@ func GetSettingsView(ctx *c.AppContext) *fyne.Container {
 	)
 
 	settingsManagement := container.NewVBox(
-		themeChangeBtn,
+		toggleThemeBtn,
 		importDataBtn,
 		exportDataBtn,
 	)

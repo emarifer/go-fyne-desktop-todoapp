@@ -29,3 +29,15 @@ git tag v1.0.3 && git push origin v1.0.3
 go build -ldflags="-s -w" -o ./bin/todoapp -tags=prod
 fyne package --release -exe todoapp --tags prod
 */
+
+/* COMMANDS FOR DOCKER-WINE:
+# Download the docker-wine script:
+wget https://raw.githubusercontent.com/scottyhardy/docker-wine/master/docker-wine
+chmod +x docker-wine
+
+# Run the script using the local image and binding a dist/ folder to the docker-wine volume
+docker-wine --local --volume=$(pwd)/dist:/home/wineuser/dist
+
+# Accessing the folder where `wineuser` data is stored
+cd ~/.wine/drive_c/users/wineuser/
+*/

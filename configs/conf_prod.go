@@ -12,7 +12,7 @@ const (
 	WindowFixed  = true
 	InitialRoute = c.List
 	InitialTheme = c.Dark
-	DbFiles      = "ftodo_db"
+	DbName       = "ftodo_data.db"
 	EnableLogger = false
 	Version      = "PROD_VERSION"
 )

@@ -59,7 +59,7 @@ func NewApp() App {
 	})
 
 	// Create and connect to the DB
-	db := db.MakeDb(configs.DbFiles)
+	db := db.MakeDb(configs.DbName)
 
 	// Setup Context App
 	ctx := setupContext(&db, w)

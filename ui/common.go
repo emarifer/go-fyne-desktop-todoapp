@@ -87,11 +87,11 @@ func navigateBtn(
 	})
 }
 
-func themeChangeBtn(
+func toggleThemeBtn(
 	ctx *context.AppContext, icon fyne.Resource,
 ) *widget.Button {
 
-	return widget.NewButtonWithIcon("Change Theme", icon, func() {
+	return widget.NewButtonWithIcon("Toggle Theme", icon, func() {
 		switch ctx.CurrentTheme() {
 		case context.Dark:
 			ctx.ChangeThemeTo(context.Light)
